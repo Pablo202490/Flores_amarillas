@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flores Amarillas - Nuestros Recuerdos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #fdf8e3 0%, #fff3cf 100%);
+            font-family: 'Segoe UI', 'Quicksand', system-ui, -apple-system, 'Roboto', 'Dancing Script', cursive;
+            overflow-x: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Contenedor principal */
+        .container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            z-index: 2;
+        }
+
+        /* Tarjeta de dedicatoria */
+        .dedication-card {
+            background: rgba(255, 250, 225, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 68px;
+            padding: 2rem 2.8rem;
+            text-align: center;
+            box-shadow: 0 25px 45px rgba(255, 193, 7, 0.3), 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 215, 100, 0.7);
+            max-width: 650px;
+            width: 90%;
+            transition: transform 0.3s ease;
+            z-index: 15;
+        }
+
+        .dedication-card:hover {
+            transform: scale(1.01);
+        }
+
+        h1 {
+            font-size: 3.2rem;
+            font-weight: 600;
+            color: #d48f2b;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
+            font-family: 'Dancing Script', cursive;
+            letter-spacing: 1px;
+        }
+
+        .message {
+            font-size: 1.35rem;
+            color: #a5672a;
+            margin: 1.2rem 0;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .highlight {
+            color: #e9a23b;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        /* Zona de flores animadas (canvas) */
+        .flowers-canvas-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Galería de fotos animadas alrededor */
+        .photo-gallery {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .memory-photo {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 20px;
+            object-fit: cover;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+            border: 3px solid #ffd966;
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            pointer-events: auto;
+            cursor: pointer;
+            filter: brightness(1.02) contrast(1.05);
+            animation: floatPhoto 4s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        .memory-photo:hover {
+            transform: scale(1.15) rotate(2deg);
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
+            border-color: #ffb347;
+            filter: brightness(1.08);
+            z-index: 100;
+        }
+
+        /* Diferentes animaciones flotantes para cada foto */
+        @keyframes floatPhoto {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-12px) rotate(2deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        /* Variación para algunas fotos */
+        .memory-photo:nth-child(odd) {
+            animation: floatPhotoAlt 4.5s ease-in-out infinite;
+        }
+
+        @keyframes floatPhotoAlt {
+            0% {
+                transform: translateY(0px) rotate(-1deg);
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(1deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(-1deg);
+            }
+        }
+
+        /* Estilo para el modal de imagen ampliada */
+        .modal-image {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-image.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            max-width: 85vw;
+            max-height: 85vh;
+            border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            border: 4px solid #ffd966;
+            animation: zoomIn 0.3s ease;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            color: white;
+            font-size: 45px;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .close-modal:hover {
+            background: #ffb347;
+            transform: scale(1.1);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 12px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #c48a3a;
+            background: rgba(255, 245, 200, 0.6);
+            padding: 5px;
+            z-index: 20;
+            backdrop-filter: blur(3px);
+            font-weight: 500;
+        }
+
+        @media (max-width: 680px) {
+            .dedication-card {
+                padding: 1.5rem 1.2rem;
+            }
+
+            h1 {
+                font-size: 2.4rem;
+            }
+
+            .message {
+                font-size: 1.1rem;
+            }
+
+            .memory-photo {
+                width: 75px;
+                height: 75px;
+                border-radius: 15px;
+            }
+        }
+
+        .heart-emoji {
+            display: inline-block;
+            animation: heartBeat 1.2s infinite;
+        }
+
+        @keyframes heartBeat {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="flowers-canvas-area">
+        <canvas id="flowerCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <!-- Galería de fotos animadas alrededor -->
+    <div class="photo-gallery" id="photoGallery"></div>
+
+    <!-- Modal para ver imagen ampliada -->
+    <div id="imageModal" class="modal-image">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="modalImg" alt="Recuerdo especial">
+    </div>
+
+    <div class="container">
+        <div class="dedication-card">
+            <h1>🌼 Para ti, mi Juli 🌻</h1>
+            <div class="message">
+                Te quiero muchísimo, mi Juli. 💛<br>
+                Eres lo mejor que me ha pasado en la vida.<br>
+                Nunca antes me había sentido tan seguro de algo,<br>
+                tan seguro de que a tu lado es donde quiero estar.
+            </div>
+            <div class="message highlight">
+                Quiero que seas tu. Siempre tu.
+            </div>
+            <div class="message">
+                Me encanta reir con vos, chismear de todo hasta tarde jajajaja,<br>
+                compartir cada momento contigo.<br>
+                Me gusta todo de vos. De verdad todo.
+            </div>
+            <div style="margin-top: 15px; font-size: 1.3rem;">
+                <span class="heart-emoji">💛</span> Sos mi lugar favorito <span class="heart-emoji">💛</span>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        Flores amarillas para la dueña de mi corazón (vos) 🌼📸
+    </div>
+
+    <script>
+        (function () {
+            // ---------- TUS IMÁGENES (carpeta "nosotros") ----------
+            const sampleImages = [
+                "nosotros/20230227_104254.jpg",
+                "nosotros/20250410_095244.jpg",
+                "nosotros/20251021_191711.jpg",
+                "nosotros/20251021_191718.jpg",
+                "nosotros/20251021_192223.jpg",
+                "nosotros/20260318_203519.jpg",
+                "nosotros/IMG-20260223-WA0000.jpg",
+                "nosotros/IMG-20260227-WA0049.jpg",
+                "nosotros/20251021_192152.jpg",
+                "nosotros/IMG-20260128-WA0013.jpeg",
+                "nosotros/IMG-20260204-WA0018.jpg",
+            ];
+
+            // Crear galería de fotos
+            function createPhotoGallery() {
+                const gallery = document.getElementById('photoGallery');
+                if (!gallery) return;
+                gallery.innerHTML = '';
+
+                const positions = [
+                    { top: '8%', left: '3%', rotate: -3 },
+                    { top: '15%', right: '4%', left: 'auto', rotate: 5 },
+                    { top: '28%', left: '2%', rotate: 2 },
+                    { top: '45%', right: '2%', left: 'auto', rotate: -4 },
+                    { bottom: '18%', left: '4%', top: 'auto', rotate: 3 },
+                    { bottom: '8%', right: '5%', left: 'auto', top: 'auto', rotate: -2 },
+                    { top: '55%', left: '5%', rotate: 4 },
+                    { top: '70%', right: '3%', left: 'auto', rotate: -3 },
+                    { bottom: '28%', right: '6%', left: 'auto', top: 'auto', rotate: 5 },
+                    { top: '82%', left: '7%', rotate: -1 },
+                    { top: '12%', left: '12%', rotate: 2 },
+                    { bottom: '42%', right: '8%', left: 'auto', top: 'auto', rotate: -3 },
+                    { top: '48%', left: '11%', rotate: 3 },
+                    { bottom: '65%', right: '10%', left: 'auto', top: 'auto', rotate: 4 },
+                    { top: '88%', right: '12%', left: 'auto', rotate: -2 },
+                    { bottom: '12%', left: '12%', top: 'auto', rotate: 3 }
+                ];
+
+                const totalPhotos = 16;
+                for (let i = 0; i < totalPhotos; i++) {
+                    const imgSrc = sampleImages[i % sampleImages.length];
+                    const pos = positions[i % positions.length];
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.alt = `Momento especial ${i + 1}`;
+                    img.className = 'memory-photo';
+
+                    if (pos.top) img.style.top = pos.top;
+                    if (pos.bottom) img.style.bottom = pos.bottom;
+                    if (pos.left) img.style.left = pos.left;
+                    if (pos.right) img.style.right = pos.right;
+                    if (pos.rotate) {
+                        img.style.transform = `rotate(${pos.rotate}deg)`;
+                    }
+
+                    img.style.animationDelay = `${(i * 0.2) % 2}s`;
+
+                    img.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openModal(imgSrc);
+                    });
+                    gallery.appendChild(img);
+                }
+
+                function adjustForMobile() {
+                    if (window.innerWidth <= 768) {
+                        const photos = document.querySelectorAll('.memory-photo');
+                        photos.forEach((photo, idx) => {
+                            const newPositions = [
+                                { top: '5%', left: '2%' }, { top: '5%', right: '2%' },
+                                { top: '20%', left: '1%' }, { top: '20%', right: '1%' },
+                                { top: '38%', left: '2%' }, { top: '38%', right: '2%' },
+                                { bottom: '20%', left: '2%' }, { bottom: '20%', right: '2%' },
+                                { bottom: '5%', left: '2%' }, { bottom: '5%', right: '2%' },
+                                { top: '55%', left: '3%' }, { top: '55%', right: '3%' },
+                                { top: '72%', left: '4%' }, { top: '72%', right: '4%' },
+                                { bottom: '35%', left: '3%' }, { bottom: '35%', right: '3%' }
+                            ];
+                            const newPos = newPositions[idx % newPositions.length];
+                            photo.style.top = newPos.top || '';
+                            photo.style.bottom = newPos.bottom || '';
+                            photo.style.left = newPos.left || '';
+                            photo.style.right = newPos.right || '';
+                            photo.style.width = '70px';
+                            photo.style.height = '70px';
+                        });
+                    }
+                }
+
+                adjustForMobile();
+                window.addEventListener('resize', adjustForMobile);
+            }
+
+            // Modal de imagen
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImg');
+            const closeModalBtn = document.querySelector('.close-modal');
+
+            function openModal(imgUrl) {
+                modalImg.src = imgUrl;
+                modal.classList.add('active');
+            }
+
+            function closeModal() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modalImg.src = '';
+                }, 300);
+            }
+
+            closeModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // ---------- CANVAS DE FLORES AMARILLAS ----------
+            const canvas = document.getElementById('flowerCanvas');
+            let ctx = canvas.getContext('2d');
+            let width, height;
+            let flowers = [];
+            let particleSystem = [];
+            let animationId = null;
+
+            const FLOWER_COUNT = 24;
+            const PETAL_COLOR_1 = '#FFD966';
+            const PETAL_COLOR_2 = '#F7D44A';
+            const CENTER_COLOR = '#C97E2A';
+            const STEM_COLOR = '#5F8B4C';
+
+            class AnimatedFlower {
+                constructor(x, y, size, angleOffset, speedFactor) {
+                    this.x = x;
+                    this.y = y;
+                    this.baseX = x;
+                    this.baseY = y;
+                    this.size = size;
+                    this.angleOffset = angleOffset;
+                    this.speedFactor = speedFactor;
+                    this.waveTime = Math.random() * Math.PI * 2;
+                    this.waveSpeed = 0.018 + Math.random() * 0.012;
+                    this.waveAmpX = 5 + Math.random() * 7;
+                    this.waveAmpY = 4 + Math.random() * 6;
+                    this.rotation = Math.random() * Math.PI * 2;
+                    this.rotSpeed = 0.0015 + Math.random() * 0.004;
+                }
+
+                update() {
+                    this.waveTime += this.waveSpeed;
+                    this.x = this.baseX + Math.sin(this.waveTime) * this.waveAmpX;
+                    this.y = this.baseY + Math.cos(this.waveTime * 0.8) * this.waveAmpY;
+                    this.rotation += this.rotSpeed;
+                }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation);
+                    const petalCount = 8;
+                    const radius = this.size * 0.85;
+                    for (let i = 0; i < petalCount; i++) {
+                        const angle = (i / petalCount) * Math.PI * 2;
+                        const petalX = Math.cos(angle) * radius;
+                        const petalY = Math.sin(angle) * radius;
+                        ctx.save();
+                        ctx.translate(petalX, petalY);
+                        ctx.rotate(angle);
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.quadraticCurveTo(6, -this.size * 0.55, 0, -this.size * 0.9);
+                        ctx.quadraticCurveTo(-6, -this.size * 0.55, 0, 0);
+                        ctx.fillStyle = PETAL_COLOR_1;
+                        ctx.shadowBlur = 3;
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.moveTo(0, -this.size * 0.3);
+                        ctx.quadraticCurveTo(3, -this.size * 0.5, 0, -this.size * 0.7);
+                        ctx.quadraticCurveTo(-3, -this.size * 0.5, 0, -this.size * 0.3);
+                        ctx.fillStyle = PETAL_COLOR_2;
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.45, 0, Math.PI * 2);
+                    ctx.fillStyle = CENTER_COLOR;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.25, 0, Math.PI * 2);
+                    ctx.fillStyle = '#E6A017';
+                    ctx.fill();
+                    ctx.fillStyle = '#AC6F2C';
+                    for (let i = 0; i < 12; i++) {
+                        let rndAngle = Math.random() * Math.PI * 2;
+                        let rad = this.size * 0.3;
+                        let xDot = Math.cos(rndAngle) * rad;
+                        let yDot = Math.sin(rndAngle) * rad;
+                        ctx.beginPath();
+                        ctx.arc(xDot, yDot, this.size * 0.07, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y + this.size * 0.55);
+                    ctx.lineTo(this.x, this.y + this.size * 1.25);
+                    ctx.lineWidth = this.size * 0.22;
+                    ctx.strokeStyle = STEM_COLOR;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.size * 0.25, this.y + this.size * 0.85);
+                    ctx.quadraticCurveTo(this.x - this.size * 0.55, this.y + this.size * 0.65, this.x - this.size * 0.4, this.y + this.size * 0.45);
+                    ctx.fillStyle = '#6C9E4A';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.size * 0.25, this.y + this.size * 0.85);
+                    ctx.quadraticCurveTo(this.x + this.size * 0.55, this.y + this.size * 0.65, this.x + this.size * 0.4, this.y + this.size * 0.45);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            class PetalParticle {
+                constructor(x, y, size, speedX, speedY, rotation) {
+                    this.x = x; this.y = y; this.size = size; this.speedX = speedX; this.speedY = speedY;
+                    this.alpha = 0.9; this.rotation = rotation; this.life = 1;
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    this.speedY += 0.05;
+                    this.life -= 0.01;
+                    this.alpha = this.life;
+                    return this.life > 0;
+                }
+                draw(ctx) {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(4, -this.size, 0, -this.size * 1.6);
+                    ctx.quadraticCurveTo(-4, -this.size, 0, 0);
+                    ctx.fillStyle = `rgba(255, 215, 100, ${this.alpha * 0.7})`;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function addPetalExplosion(x, y) {
+                for (let i = 0; i < 6; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let speed = 0.8 + Math.random() * 2;
+                    let vx = Math.cos(angle) * speed;
+                    let vy = Math.sin(angle) * speed - 1;
+                    let size = 4 + Math.random() * 8;
+                    particleSystem.push(new PetalParticle(x, y, size, vx, vy, Math.random() * Math.PI * 2));
+                }
+            }
+
+            function initFlowers(w, h) {
+                flowers = [];
+                for (let i = 0; i < FLOWER_COUNT; i++) {
+                    let x = 40 + Math.random() * (w - 80);
+                    let y = 40 + Math.random() * (h - 80);
+                    let size = 18 + Math.random() * 20;
+                    flowers.push(new AnimatedFlower(x, y, size, 0, 1));
+                }
+            }
+
+            function drawBackground(ctx, w, h) {
+                ctx.fillStyle = "#FFF9E8";
+                ctx.fillRect(0, 0, w, h);
+                ctx.globalAlpha = 0.2;
+                for (let i = 0; i < 80; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(w / 2, h / 2);
+                    let angle = (i / 80) * Math.PI * 2;
+                    let x2 = w / 2 + Math.cos(angle) * 280;
+                    let y2 = h / 2 + Math.sin(angle) * 200;
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = '#FFCF7A';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            function updateParticles() {
+                for (let i = 0; i < particleSystem.length; i++) {
+                    if (!particleSystem[i].update()) {
+                        particleSystem.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
+
+            function animateCanvas() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, width, height);
+                drawBackground(ctx, width, height);
+                for (let f of flowers) {
+                    f.update();
+                    f.draw(ctx);
+                }
+                for (let p of particleSystem) p.draw(ctx);
+                updateParticles();
+                animationId = requestAnimationFrame(animateCanvas);
+            }
+
+            function resizeCanvas() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                if (ctx) ctx = canvas.getContext('2d');
+                initFlowers(width, height);
+            }
+
+            window.addEventListener('resize', () => resizeCanvas());
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                let canvasX = (e.clientX - rect.left) * scaleX;
+                let canvasY = (e.clientY - rect.top) * scaleY;
+                for (let f of flowers) {
+                    let dx = f.x - canvasX, dy = f.y - canvasY;
+                    if (Math.hypot(dx, dy) < 55 && Math.random() < 0.2) addPetalExplosion(f.x, f.y);
+                }
+            });
+
+            resizeCanvas();
+            animateCanvas();
+
+            setInterval(() => {
+                if (flowers.length && Math.random() < 0.4) {
+                    let rand = flowers[Math.floor(Math.random() * flowers.length)];
+                    addPetalExplosion(rand.x, rand.y);
+                }
+            }, 800);
+
+            // Inicializar galería de fotos
+            createPhotoGallery();
+
+            console.log('🌸 Flores amarillas + galería de recuerdos animada 🌼');
+        })();
+    </script>
+</body>
+
+</html>
